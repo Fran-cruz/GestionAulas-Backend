@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AulaController;
+use App\Http\Controllers\Api\SeccionController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -12,4 +14,4 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::apiResource('aulas', AulaController::class);
-
+Route::apiResource('secciones', SeccionController::class);
