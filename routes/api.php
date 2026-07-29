@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SesionHorarioController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AulaController;
 use App\Http\Controllers\Api\SeccionController;
@@ -21,4 +22,5 @@ Route::apiResource('secciones', SeccionController::class);
 Route::apiResource('docentes', DocenteController::class);
 Route::apiResource('asignaciones', AsignacionController::class);
 Route::apiResource('periodos-academicos', PeriodoAcademicoController::class);
+Route::apiResource('sesiones-horario', SesionHorarioController::class);
 
