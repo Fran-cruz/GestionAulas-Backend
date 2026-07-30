@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
 use App\Models\SesionHorario;
 use Illuminate\Http\JsonResponse;
@@ -9,6 +10,18 @@ use Illuminate\Validation\Rule;
 
 class SesionHorarioController extends Controller
 {
+    /**
+     * Valores válidos para el campo dia.
+     */
+    private const DIAS_VALIDOS = [
+        'LUNES',
+        'MARTES',
+        'MIERCOLES',
+        'JUEVES',
+        'VIERNES',
+        'SABADO',
+    ];
+
     /**
      * GET /api/sesiones-horario
      * Lista todas las sesiones.
@@ -24,65 +37,92 @@ class SesionHorarioController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $datos = $request->validate([
-            'id_asignacion' => ['required', 'integer', 'exists:asignaciones,id'],
-            'dia' => ['required', Rule::in(['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'])],
-            'hora_inicio' => ['required', 'date_format:H:i'],
-            'hora_fin' => ['required', 'date_format:H:i', 'after:hora_inicio'],
-            'generado_automaticamente' => ['nullable', 'boolean'],
-        ]);
-
-        $datos['generado_automaticamente'] = $datos['generado_automaticamente'] ?? false;
+        $datos = $this->validarDatos($request);
 
         $sesion = SesionHorario::create($datos);
 
         return response()->json([
             'message' => 'Sesión de horario creada correctamente.',
-            'sesion' => $sesion,
+            'sesion' => $sesion->fresh(),
         ], 201);
     }
 
     /**
-     * GET /api/sesiones-horario/{sesionHorario}
+     * GET /api/sesiones-horario/{id}
      * Muestra una sola sesión.
      */
-    public function show(SesionHorario $sesionHorario): JsonResponse
+    public function show(int $id): JsonResponse
     {
+        $sesionHorario = SesionHorario::findOrFail($id);
+
         return response()->json($sesionHorario);
     }
 
     /**
-     * PUT/PATCH /api/sesiones-horario/{sesionHorario}
+     * PUT/PATCH /api/sesiones-horario/{id}
      * Actualiza una sesión. Acepta actualizaciones parciales.
      */
-    public function update(Request $request, SesionHorario $sesionHorario): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
-        $datos = $request->validate([
-            'id_asignacion' => ['sometimes', 'required', 'integer', 'exists:asignaciones,id'],
-            'dia' => ['sometimes', 'required', Rule::in(['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'])],
-            'hora_inicio' => ['sometimes', 'required', 'date_format:H:i'],
-            'hora_fin' => ['sometimes', 'required', 'date_format:H:i', 'after:hora_inicio'],
-            'generado_automaticamente' => ['sometimes', 'boolean'],
-        ]);
+        $sesionHorario = SesionHorario::findOrFail($id);
+
+        $datos = $this->validarDatos($request, true);
 
         $sesionHorario->update($datos);
 
         return response()->json([
             'message' => 'Sesión de horario actualizada correctamente.',
-            'sesion' => $sesionHorario,
+            'sesion' => $sesionHorario->fresh(),
         ]);
     }
 
     /**
-     * DELETE /api/sesiones-horario/{sesionHorario}
+     * DELETE /api/sesiones-horario/{id}
      * Elimina una sesión.
      */
-    public function destroy(SesionHorario $sesionHorario): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
+        $sesionHorario = SesionHorario::findOrFail($id);
         $sesionHorario->delete();
 
         return response()->json([
             'message' => 'Sesión de horario eliminada correctamente.',
         ]);
+    }
+
+    /**
+     * Valida y normaliza datos de entrada.
+     */
+    private function validarDatos(Request $request, bool $parcial = false): array
+    {
+        if ($request->has('dia')) {
+            $request->merge([
+                'dia' => strtoupper((string) $request->input('dia')),
+            ]);
+        }
+
+        $reglas = [
+            'id_asignacion' => [$parcial ? 'sometimes' : 'required', 'integer', 'exists:asignaciones,id'],
+            'dia' => [$parcial ? 'sometimes' : 'required', Rule::in(self::DIAS_VALIDOS)],
+            'hora_inicio' => [$parcial ? 'sometimes' : 'required', 'date_format:H:i'],
+            'hora_fin' => [$parcial ? 'sometimes' : 'required', 'date_format:H:i'],
+            'generado_automaticamente' => [$parcial ? 'sometimes' : 'nullable', 'boolean'],
+        ];
+
+        $datos = $request->validate($reglas);
+
+        if (array_key_exists('hora_inicio', $datos) && array_key_exists('hora_fin', $datos)) {
+            if ($datos['hora_fin'] <= $datos['hora_inicio']) {
+                return throw \Illuminate\Validation\ValidationException::withMessages([
+                    'hora_fin' => ['La hora fin debe ser posterior a la hora inicio.'],
+                ]);
+            }
+        }
+
+        if (! array_key_exists('generado_automaticamente', $datos) && ! $parcial) {
+            $datos['generado_automaticamente'] = false;
+        }
+
+        return $datos;
     }
 }
