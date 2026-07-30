@@ -29,7 +29,7 @@ class PeriodoAcademicoController extends Controller
             'fecha_inicio' => ['required', 'date'],
             'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
             'estado' => ['nullable', Rule::in(['ACTIVO', 'CERRADO'])],
-            'id_usuario_creador' => ['required', 'integer', 'exists:usuarios,id'],
+            'id_usuario_creador' => ['required', 'integer', 'exists:users,id'],
         ]);
 
         $datos['estado'] = $datos['estado'] ?? 'ACTIVO';
