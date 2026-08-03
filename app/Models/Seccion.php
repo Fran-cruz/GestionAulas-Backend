@@ -24,12 +24,14 @@ class Seccion extends Model
         'area_academica',
         'duracion_sesion_horas',
         'horas_semanales_totales',
+        'cantidad_alumnos',
         'sesiones_por_semana',
         'activa',
     ];
 
     protected $casts = [
         'activa' => 'boolean',
+        'cantidad_alumnos' => 'integer',
         'duracion_sesion_horas' => 'decimal:2',
         'horas_semanales_totales' => 'decimal:2',
     ];
